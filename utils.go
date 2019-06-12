@@ -162,7 +162,7 @@ func SendTxTest(wg1 *sync.WaitGroup, wg2 *sync.WaitGroup, txch chan string, clie
 
 }
 
-func listen(wg *sync.WaitGroup, txch chan string, quit chan bool, client *ethclient.Client, address string) {
+func listen(wg *sync.WaitGroup, txch chan string, quit chan bool, client *ethclient.Client) {
 
 	// read channel with hashes of sended txs
 	var txs []string
@@ -220,7 +220,7 @@ func TestPerformance(client *ethclient.Client, from, to string, value *big.Int, 
 	txch := make(chan string, 1000)
 	quit := make(chan bool)
 
-	go listen(&wg2, txch, quit, client, "0xB853344f9387304e169B0F0fCB21fEc4AA403375")
+	go listen(&wg2, txch, quit, client)
 
 	for i := 0; i < num; i++ {
 		wg1.Add(1)
