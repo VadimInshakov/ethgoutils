@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"net/http"
 	"os"
 	"sync"
@@ -27,14 +28,17 @@ func main() {
 	methodPtr := flag.String("method", "", "which operation to execute")
 	fromPtr := flag.String("from", "", "address from which the funds are sent")
 	toPtr := flag.String("to", "", "address to which funds are sent")
-	valuePtr := flag.Int64("value", 0, "amount of ether")
+	valuePtr := flag.Int("value", 0, "amount of ether")
 	txnumberPtr := flag.Int("txnumber", 0, "number of transactions to execute")
 	addressPtr := flag.String("address", "", "address to check balance")
 
 	flag.Parse()
 
 	// convert ether to wei
-	value := *valuePtr * 1000000000000000000
+	multiplier := big.NewInt(1)
+	multiplier.SetString("1000000000000000000", 10)
+	base := big.NewInt(int64(*valuePtr))
+	value := base.Mul(base, multiplier)
 
 	client, err := ethclient.Dial(*connectPtr)
 	if err != nil {
@@ -59,7 +63,7 @@ Please choose method:
 	switch *methodPtr {
 
 	case "TestPerformance":
-		if *fromPtr == "" || *toPtr == "" || value == 0 || *txnumberPtr == 0 {
+		if *fromPtr == "" || *toPtr == "" || value == big.NewInt(0) || *txnumberPtr == 0 {
 			log.Fatal("Please specify flags --from, --to, --value, --txnumber")
 		}
 		// testPerformance(client, "0xB853344f9387304e169B0F0fCB21fEc4AA403375", "0x2Ffd141BbFF6fD973f025E68785c0f9A5759082C", 100000000000000000, 200)
@@ -75,7 +79,7 @@ Please choose method:
 		GetBalance(client, *addressPtr)
 
 	case "SendTx":
-		if *fromPtr == "" || *toPtr == "" || value == 0 {
+		if *fromPtr == "" || *toPtr == "" || value == big.NewInt(0) {
 			log.Fatal("Please specify flags --from, --to, --value, --txnumber")
 		}
 		SendTx(client, *fromPtr, *toPtr, value)
@@ -100,7 +104,7 @@ func GetBalance(client *ethclient.Client, addr string) {
 	fmt.Println("Pending balance: ", pendingBalance)
 }
 
-func SendTx(client *ethclient.Client, from string, to string, val int64) {
+func SendTx(client *ethclient.Client, from string, to string, val *big.Int) {
 
 	payload := []byte(fmt.Sprintf(`{"jsonrpc":"2.0","method":"eth_sendTransaction","params":[{"from":"%s", "to": "%s", "value": "0x%x"}],"id":1}`, from, to, val))
 
@@ -124,7 +128,7 @@ func SendTx(client *ethclient.Client, from string, to string, val int64) {
 
 }
 
-func SendTxTest(wg1 *sync.WaitGroup, wg2 *sync.WaitGroup, txch chan string, client *ethclient.Client, from string, to string, val int64) {
+func SendTxTest(wg1 *sync.WaitGroup, wg2 *sync.WaitGroup, txch chan string, client *ethclient.Client, from string, to string, val *big.Int) {
 
 	payload := []byte(fmt.Sprintf(`{"jsonrpc":"2.0","method":"eth_sendTransaction","params":[{"from":"%s", "to": "%s", "value": "0x%x"}],"id":1}`, from, to, val))
 
@@ -200,7 +204,7 @@ LOOP:
 	}
 }
 
-func TestPerformance(client *ethclient.Client, from, to string, value int64, num int) {
+func TestPerformance(client *ethclient.Client, from, to string, value *big.Int, num int) {
 
 	start := time.Now()
 
