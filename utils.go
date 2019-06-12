@@ -22,43 +22,48 @@ import (
 )
 
 func main() {
-	client, err := ethclient.Dial("/home/ubuntu/store/geth.ipc")
-	if err != nil {
-		log.Fatal(err)
-	}
 
+	connectPtr := flag.String("connect", "", "ws, http or ipc path node connection")
 	methodPtr := flag.String("method", "", "which operation to execute")
 	fromPtr := flag.String("from", "", "address from which the funds are sent")
 	toPtr := flag.String("to", "", "address to which funds are sent")
-	valuePtr := flag.Int64("value", 0, "amount of wei")
+	valuePtr := flag.Int64("value", 0, "amount of ether")
 	txnumberPtr := flag.Int("txnumber", 0, "number of transactions to execute")
 	addressPtr := flag.String("address", "", "address to check balance")
 
 	flag.Parse()
 
-	fmt.Println("we have a connection")
+	// convert ether to wei
+	value := *valuePtr * 1000000000000000000
+
+	client, err := ethclient.Dial(*connectPtr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Connected to node")
 
 	if len(os.Args) == 1 {
 		log.Fatalf(`
 
 Please choose method:  
   Methods:  
-	--TestPerformance [--from x --to y --value 0 --txnumber 0] 
-	--GenerateAccount 
-	--GetBalance [--address]
-	--SendTx [--from x --to y --value 0]
+	--TestPerformance [--from x --to y --value 0 --txnumber 0]  - benchmark 
+	--GenerateAccount 											- create account
+	--GetBalance [--address] 									- check balance
+	--SendTx [--from x --to y --value 0]						- send tx 
   Example: 
-	utils --method TestPerformance --from 0x0123 --to 0x3210 --value 1 --txnumber 1`)
+	utils --connect /home/ubuntu/store/geth.ipc --method TestPerformance --from 0x0123 --to 0x3210 --value 1 --txnumber 1`)
 	}
 
 	switch *methodPtr {
 
 	case "TestPerformance":
-		if *fromPtr == "" || *toPtr == "" || *valuePtr == 0 || *txnumberPtr == 0 {
+		if *fromPtr == "" || *toPtr == "" || value == 0 || *txnumberPtr == 0 {
 			log.Fatal("Please specify flags --from, --to, --value, --txnumber")
 		}
 		// testPerformance(client, "0xB853344f9387304e169B0F0fCB21fEc4AA403375", "0x2Ffd141BbFF6fD973f025E68785c0f9A5759082C", 100000000000000000, 200)
-		TestPerformance(client, *fromPtr, *toPtr, *valuePtr, *txnumberPtr)
+		TestPerformance(client, *fromPtr, *toPtr, value, *txnumberPtr)
 
 	case "GenerateAccount":
 		GenerateAccount()
@@ -70,10 +75,10 @@ Please choose method:
 		GetBalance(client, *addressPtr)
 
 	case "SendTx":
-		if *fromPtr == "" || *toPtr == "" || *valuePtr == 0 {
+		if *fromPtr == "" || *toPtr == "" || value == 0 {
 			log.Fatal("Please specify flags --from, --to, --value, --txnumber")
 		}
-		SendTx(client, *fromPtr, *toPtr, *valuePtr)
+		SendTx(client, *fromPtr, *toPtr, value)
 	}
 }
 
@@ -96,6 +101,7 @@ func GetBalance(client *ethclient.Client, addr string) {
 }
 
 func SendTx(client *ethclient.Client, from string, to string, val int64) {
+
 	payload := []byte(fmt.Sprintf(`{"jsonrpc":"2.0","method":"eth_sendTransaction","params":[{"from":"%s", "to": "%s", "value": "0x%x"}],"id":1}`, from, to, val))
 
 	resp, err := http.Post("http://localhost:8504", "application/json", bytes.NewBuffer(payload))
@@ -141,9 +147,11 @@ func SendTxTest(wg1 *sync.WaitGroup, wg2 *sync.WaitGroup, txch chan string, clie
 	txch <- body.Result
 	wg1.Done()
 	wg2.Add(1)
+
 }
 
 func listen(wg *sync.WaitGroup, txch chan string, quit chan bool, client *ethclient.Client, address string) {
+
 	// read channel with hashes of sended txs
 	var txs []string
 
