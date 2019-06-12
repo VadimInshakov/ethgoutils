@@ -40,6 +40,14 @@ func main() {
 	base := big.NewInt(int64(*valuePtr))
 	value := base.Mul(base, multiplier)
 
+	if *connectPtr == "" {
+		fmt.Println(`
+Please use --connect flag to establish a connection with node
+		
+Example:
+  --connect /home/ubuntu/geth.ipc
+		`)
+	}
 	client, err := ethclient.Dial(*connectPtr)
 	if err != nil {
 		log.Fatal(err)
