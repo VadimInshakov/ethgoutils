@@ -1,4 +1,4 @@
-**Command line utility for Ethereum written in Golang.**
+**Command line utility for Ethereum written in Golang**
 
 Check tx rate:
 
