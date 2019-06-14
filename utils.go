@@ -32,7 +32,7 @@ func main() {
 	txnumberPtr := flag.Int("txnumber", 0, "number of transactions to execute")
 	addressPtr := flag.String("address", "", "address to check balance")
 	keystorePathPtr := flag.String("keystore", "", "path to keystore file")
-	passwordPrt := flag.String("password", "", "password")
+	passwordPtr := flag.String("password", "", "password")
 
 	flag.Parse()
 
@@ -99,7 +99,7 @@ Please choose method:
 		if *keystorePathPtr == "" {
 			log.Fatal("Please specify flag --keystore")
 		}
-		key := wallet.GetPrivateFromKeystore(*keystorePathPtr, *passwordPrt)
+		key := wallet.GetPrivateFromKeystore(*keystorePathPtr, *passwordPtr)
 		fmt.Println("Private key: ", key)
 	}
 }
