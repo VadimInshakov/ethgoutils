@@ -12,6 +12,10 @@ Generate new account:
 
     utils --connect <ipc, ws, http path to node> --method GenerateAccount
 
+Get private key from keystore file:
+
+    utils --connect <ipc, ws, http path to node> --method GetPrivateFromKeystore --keystore <path to keystore file> --password <password>
+
 Check balance:
 
     utils --connect <ipc, ws, http path to node> --method GetBalance --address <address of account>
