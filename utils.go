@@ -31,6 +31,8 @@ func main() {
 	valuePtr := flag.Int("value", 0, "amount of ether")
 	txnumberPtr := flag.Int("txnumber", 0, "number of transactions to execute")
 	addressPtr := flag.String("address", "", "address to check balance")
+	keystorePathPtr := flag.String("keystore", "", "path to keystore file")
+	passwordPrt := flag.String("password", "", "password")
 
 	flag.Parse()
 
@@ -60,10 +62,11 @@ Example:
 
 Please choose method:  
   Methods:  
-	--TestPerformance [--from x --to y --value 0 --txnumber 0]  - benchmark 
-	--GenerateAccount 											- create account
-	--GetBalance [--address] 									- check balance
-	--SendTx [--from x --to y --value 0]						- send tx 
+	--TestPerformance [--from x --to y --value 0 --txnumber 0]       - benchmark 
+	--GenerateAccount 											     - create account
+	--GetBalance [--address] 									     - check balance
+	--SendTx [--from x --to y --value 0]						     - send tx 
+	--GetPrivateFromKeystore [--keystore path/file --password x]     - get private key from keystore file
   Example: 
 	utils --connect /home/ubuntu/store/geth.ipc --method TestPerformance --from 0x0123 --to 0x3210 --value 1 --txnumber 1`)
 	}
@@ -91,6 +94,13 @@ Please choose method:
 			log.Fatal("Please specify flags --from, --to, --value, --txnumber")
 		}
 		SendTx(client, *fromPtr, *toPtr, value)
+
+	case "GetPrivateFromKeystore":
+		if *keystorePathPtr == "" {
+			log.Fatal("Please specify flag --keystore")
+		}
+		key := wallet.GetPrivateFromKeystore(*keystorePathPtr, *passwordPrt)
+		fmt.Println("Private key: ", key)
 	}
 }
 
