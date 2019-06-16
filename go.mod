@@ -9,6 +9,9 @@ require (
 	golang.org/x/net v0.0.0-20190522155817-f3200d17e092 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	wallet v0.0.0
+	contract v0.0.0
 )
 
 replace wallet => ./wallet
+
+replace contract => ./contract
