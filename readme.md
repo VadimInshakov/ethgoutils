@@ -23,3 +23,7 @@ Check balance:
 Send tx:
 
     utils --connect <ipc, ws, http path to node> --method SendTx --from <from address> --to <to address> --value <amount of ether to be sent>
+
+Generate ABI, go package and compile sol to EVM bytecode:
+
+    utils --method Compile --contract <path to .sol contract file>

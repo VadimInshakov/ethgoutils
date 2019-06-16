@@ -10,6 +10,8 @@ import (
 	"math/big"
 	"net/http"
 	"os"
+	"os/exec"
+	"regexp"
 	"sync"
 	"time"
 
@@ -32,7 +34,8 @@ func main() {
 	txnumberPtr := flag.Int("txnumber", 0, "number of transactions to execute")
 	addressPtr := flag.String("address", "", "address to check balance")
 	keystorePathPtr := flag.String("keystore", "", "path to keystore file")
-	passwordPtr := flag.String("password", "", "password")
+	passwordPrt := flag.String("password", "", "password")
+	contractPtr := flag.String("contract", "", "smart contract path")
 
 	flag.Parse()
 
@@ -42,7 +45,7 @@ func main() {
 	base := big.NewInt(int64(*valuePtr))
 	value := base.Mul(base, multiplier)
 
-	if *connectPtr == "" {
+	if *contractPtr == "" && *connectPtr == "" {
 		fmt.Println(`
 Please use --connect flag to establish a connection with node
 		
@@ -50,12 +53,15 @@ Example:
   --connect /home/ubuntu/geth.ipc
 		`)
 	}
-	client, err := ethclient.Dial(*connectPtr)
-	if err != nil {
-		log.Fatal(err)
+	var client *ethclient.Client
+	if *contractPtr == "" {
+		var err error
+		client, err = ethclient.Dial(*connectPtr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Connected to node")
 	}
-
-	fmt.Println("Connected to node")
 
 	if len(os.Args) == 1 {
 		log.Fatalf(`
@@ -67,6 +73,7 @@ Please choose method:
 	--GetBalance [--address] 									     - check balance
 	--SendTx [--from x --to y --value 0]						     - send tx 
 	--GetPrivateFromKeystore [--keystore path/file --password x]     - get private key from keystore file
+	--Compile [--contract]                                           - generate ABI, go package and compile sol to EVM bytecode 
   Example: 
 	utils --connect /home/ubuntu/store/geth.ipc --method TestPerformance --from 0x0123 --to 0x3210 --value 1 --txnumber 1`)
 	}
@@ -99,9 +106,67 @@ Please choose method:
 		if *keystorePathPtr == "" {
 			log.Fatal("Please specify flag --keystore")
 		}
-		key := wallet.GetPrivateFromKeystore(*keystorePathPtr, *passwordPtr)
+		key := wallet.GetPrivateFromKeystore(*keystorePathPtr, *passwordPrt)
 		fmt.Println("Private key: ", key)
+
+	case "Compile":
+		if *contractPtr == "" {
+			log.Fatal("Please specify flag --contract")
+		}
+		Compile(*contractPtr)
+		log.Println("Compiled successfully")
+
 	}
+
+}
+
+func Compile(contractPath string) {
+
+	r, _ := regexp.Compile("([/\\w-/]+/)([\\w-]+\\.)")
+	arr := r.FindStringSubmatch(contractPath)
+
+	contractName := arr[2]
+	contractName = string(contractName[:len(contractName)-1])
+
+	// create abi
+	abi := exec.Command("solc", "--abi", contractPath, "-o", "build")
+	output, err := abi.CombinedOutput()
+	if err != nil {
+		log.Fatal(fmt.Sprint(err) + ": " + string(output))
+		return
+	}
+	fmt.Println(string(output))
+	abi.Wait()
+
+	// create go package
+	gopack := exec.Command("abigen", fmt.Sprintf("--abi=./build/%s.abi", contractName), fmt.Sprintf("--pkg=%s", contractName), fmt.Sprintf("--out=./build/%s.go", contractName))
+	output, err = gopack.CombinedOutput()
+	if err != nil {
+		log.Fatal(fmt.Sprint(err) + ": " + string(output))
+		return
+	}
+	fmt.Println(string(output))
+	gopack.Wait()
+
+	// create bin
+	bin := exec.Command("solc", "--bin", contractPath, "-o", "build")
+	output, err = bin.CombinedOutput()
+	if err != nil {
+		log.Fatal(fmt.Sprint(err) + ": " + string(output))
+		return
+	}
+	fmt.Println(string(output))
+	bin.Wait()
+
+	// create go package with deploy method
+	godeploy := exec.Command("abigen", fmt.Sprintf("--bin=./build/%s.bin", contractName), fmt.Sprintf("--abi=./build/%s.abi", contractName), fmt.Sprintf("--pkg=%s", contractName), fmt.Sprintf("--out=./build/%s.go", contractName))
+	output, err = godeploy.CombinedOutput()
+	if err != nil {
+		log.Fatal(fmt.Sprint(err) + ": " + string(output))
+		return
+	}
+	fmt.Println(string(output))
+	godeploy.Wait()
 }
 
 func GenerateAccount() {
