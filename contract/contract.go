@@ -95,10 +95,6 @@ func TokenInfo(client *ethclient.Client, contractaddr string) {
 
 func TransferToken(client *ethclient.Client, priv string, contractaddr string, to string, value int64, gaslimit uint64, gasprice int64) {
 
-	/* ATTENTION!
-	   NewBenefitToken must be replaced with New<your contract name>() method
-	*/
-
 	privateKey, err := crypto.HexToECDSA(priv)
 	if err != nil {
 		log.Fatal(err)
