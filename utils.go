@@ -15,8 +15,8 @@ import (
 
 	"context"
 
-	"wallet"
 	"contract"
+	"wallet"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -29,19 +29,24 @@ func main() {
 	methodPtr := flag.String("method", "", "which operation to execute")
 	fromPtr := flag.String("from", "", "address from which the funds are sent")
 	toPtr := flag.String("to", "", "address to which funds are sent")
-	valuePtr := flag.Int("value", 0, "amount of ether")
+	valuePtr := flag.Int64("value", 0, "amount of ether")
 	txnumberPtr := flag.Int("txnumber", 0, "number of transactions to execute")
 	addressPtr := flag.String("address", "", "address to check balance")
 	keystorePathPtr := flag.String("keystore", "", "path to keystore file")
 	passwordPrt := flag.String("password", "", "password")
 	contractPtr := flag.String("contract", "", "smart contract path")
+	contractAddrPtr := flag.String("contractaddr", "", "smart contract address")
+	privPtr := flag.String("priv", "", "smart contract address")
+	gaslimit := flag.Uint64("gaslimit", 0, "gas limit")
+	gasprice := flag.Int64("gasprice", 0, "gas price")
+	tx := flag.String("tx", "", "tx hash for confirmation monitoring")
 
 	flag.Parse()
 
 	// convert ether to wei
 	multiplier := big.NewInt(1)
 	multiplier.SetString("1000000000000000000", 10)
-	base := big.NewInt(int64(*valuePtr))
+	base := big.NewInt(*valuePtr)
 	value := base.Mul(base, multiplier)
 
 	if *contractPtr == "" && *connectPtr == "" {
@@ -67,12 +72,16 @@ Example:
 
 Please choose method:  
   Methods:  
-	--TestPerformance [--from x --to y --value 0 --txnumber 0]       - benchmark 
-	--GenerateAccount 											     - create account
-	--GetBalance [--address] 									     - check balance
-	--SendTx [--from x --to y --value 0]						     - send tx 
-	--GetPrivateFromKeystore [--keystore path/file --password x]     - get private key from keystore file
-	--Compile [--contract]                                           - generate ABI, go package and compile sol to EVM bytecode 
+	--TestPerformance [--from 0x000... --to 0x001... --value 0 --txnumber 0]    								 		     - benchmark 
+	--GenerateAccount 											  								                 		     - create account
+	--GetBalance [--address 0x000...] 									  								         		     - check balance
+	--SendTx [--from x --to y --value 0]						  								                 		     - send tx 
+	--GetPrivateFromKeystore [--keystore path/file --password x]  								                 		     - get private key from keystore file
+	--Compile [--contract path/file]                                								             		     - generate ABI, go package and compile sol to EVM bytecode 
+	--TokenInfo [--contractaddr 0x000...]                              								             		     - get token info
+	--TransferToken [--contractaddr 0x000... --priv 7482... --to 0x8482... --value 100 --gaslimit 3000000 --gasprice 1]     - transfer tokens
+    --GetTokenAmount [--contractaddr 0x000... --priv 7482... --address 0x8482...]							    			 - get tokens amount on address
+    --ListenTx [--tx 0x8432...]																					 		     - listen blocks for tx confirmation
   Example: 
 	utils --connect /home/ubuntu/store/geth.ipc --method TestPerformance --from 0x0123 --to 0x3210 --value 1 --txnumber 1`)
 	}
@@ -114,6 +123,30 @@ Please choose method:
 		}
 		contract.Compile(*contractPtr)
 		log.Println("Compiled successfully")
+
+	case "TokenInfo":
+		if *contractAddrPtr == "" {
+			log.Fatal("Please specify flag --contractaddr")
+		}
+		contract.TokenInfo(client, *contractAddrPtr)
+
+	case "TransferToken":
+		if *toPtr == "" || *contractAddrPtr == "" || *privPtr == "" || *gaslimit == 0 || *valuePtr == 0 {
+			log.Fatal("Please specify flags --contractaddr, --priv, --value, --to, --gaslimit, --gasprice")
+		}
+		contract.TransferToken(client, *privPtr, *contractAddrPtr, *toPtr, *valuePtr, *gaslimit, *gasprice)
+
+	case "GetTokenAmount":
+		if *addressPtr == "" || *contractAddrPtr == "" || *privPtr == "" {
+			log.Fatal("Please specify flags --contractaddr, --priv, --address")
+		}
+		contract.GetTokenAmount(client, *privPtr, *contractAddrPtr, *addressPtr)
+
+	case "ListenTx":
+		if *tx == "" {
+			log.Fatal("Please specify flag --tx")
+		}
+		contract.ListenTx(client, *tx)
 
 	}
 

@@ -24,6 +24,18 @@ Send tx:
 
     utils --connect <ipc, ws, http path to node> --method SendTx --from <from address> --to <to address> --value <amount of ether to be sent>
 
+Transfer tokens:
+
+    utils --connect <ipc, ws, http path to node> --method TransferToken --contractaddr <contract hex address> --gaslimit <gas limit in units> --gasprice <gas price in wei> --to <receiver's hex address> --value <amount of tokens to send>
+
+Get token info:
+
+    utils --connect <ipc, ws, http path to node> --method TokenInfo --contractaddr <contract hex address>
+
+Listen blocks for tx confirmation:
+
+    utils --connect <ipc, ws, http path to node> --method ListenTx --tx <tx hash>
+
 Generate ABI, go package and compile sol to EVM bytecode:
 
     utils --method Compile --contract <path to .sol contract file>
