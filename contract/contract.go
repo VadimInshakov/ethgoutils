@@ -1,5 +1,7 @@
 package contract
 
+//go:generate ./generate.sh CUSTOM
+
 import (
 	"context"
 	"crypto/ecdsa"
@@ -70,10 +72,7 @@ func Compile(contractPath string) {
 
 func TokenInfo(client *ethclient.Client, contractaddr string) {
 
-	/* ATTENTION!
-	   NewBenefitToken must be replaced with New<your contract name>() method
-	*/
-	instance, err := contr.NewBenefitToken(common.HexToAddress(contractaddr), client)
+	instance, err := contr.NewTOKENNAME(common.HexToAddress(contractaddr), client)
 	if err != nil {
 		log.Fatalf("Failed to instantiate contract: %v", err)
 	}
@@ -119,7 +118,7 @@ func TransferToken(client *ethclient.Client, priv string, contractaddr string, t
 	// auth.GasLimit = uint64(gaslimit)
 	// auth.GasPrice = big.NewInt(gasprice)
 
-	// instance, err := contr.NewBenefitToken(common.HexToAddress(contractaddr), client)
+	// instance, err := contr.NewTOKENNAME(common.HexToAddress(contractaddr), client)
 	// if err != nil {
 	// 	log.Fatalf("Failed to instantiate contract: %v", err)
 	// }
@@ -190,7 +189,7 @@ func GetTokenAmount(client *ethclient.Client, priv string, contractaddr string, 
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 
-	instance, err := contr.NewBenefitToken(common.HexToAddress(contractaddr), client)
+	instance, err := contr.NewTOKENNAME(common.HexToAddress(contractaddr), client)
 	if err != nil {
 		log.Fatalf("Failed to instantiate contract: %v", err)
 	}
